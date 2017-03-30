@@ -10,19 +10,48 @@ const rejected = (value) => Task((reject) => reject(value))
 
 const map = (f, task) => Task((reject, resolve) => fork(a => reject(a), b => resolve(f(b))), task)
 
-const chain = (f, task) => Task(() => {}, () => {})
+const chain = (f, task) => Task((reject, resolve) => fork(a => reject(a), b => fork(reject, resolve, f(b)), task))
 
-const ap = () => {}
+const ap = (taskf, taskx) => Task((reject, resolve) => {
+    let value
+    let valueSet = false
+    let func
+    let funcSet = false
 
-const concat = () => {}
+    const resolver = (setter) => (x) => {
+        setter(x)
+        if (valueSet === true && funcSet === true){
+            return resolve(func(value))
+        }
+    }
+
+    const statex = fork(reject, resolver((x) => {
+        value = x
+        valueSet = true
+    }), taskx)
+
+    const statef = fork(reject, resolver((f) => {
+        func = f
+        funcSet = true
+    }), taskf)
+
+    return [statex, statef]
+})
+
+const concat = (concattask, task) => Task((reject, resolve) => {
+    const state = fork(reject, resolve, task)
+    const stateconcat = fork(reject, resolve, taskconcat)
+
+    return [state, stateconcat]
+})
 
 const empty = () => Task(() => {})
 
-const fold = () => {}
+const fold = (f, g, task) => Task((_, resolve) => fork(a => resolve(f(a)), b => resolve(g(b))), task)
 
-const cata = () => {}
+const cata = (pattern, task) => fold(pattern.rejected, pattern.resolved, task)
 
-const bimap = () => {}
+const bimap = (f, g) => Task((reject, resolve) => fork(a => reject(f(a)), b => resolve(g(b))), task)
 
 const fork = (reject, resolve, task) => task.computation(reject, resolve)
 
