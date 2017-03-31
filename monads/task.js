@@ -8,7 +8,7 @@ const of = (value) => Task((_, resolve) => resolve(value))
 
 const rejected = (value) => Task((reject) => reject(value))
 
-const map = (f, task) => Task((reject, resolve) => fork(a => reject(a), b => resolve(f(b))), task)
+const map = (f, task) => Task((reject, resolve) => fork(a => reject(a), b => resolve(f(b)), task))
 
 const chain = (f, task) => Task((reject, resolve) => fork(a => reject(a), b => fork(reject, resolve, f(b)), task))
 
