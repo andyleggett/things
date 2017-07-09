@@ -1,16 +1,19 @@
-import {assoc, append, curry} from 'ramda'
+const {assoc, append, curry, forEach} = require('ramda')
 
-const _Stream = function (initialvalue) {
-    this.value = initialvalue
-    this.values = [initialvalue]
-    this.observers = []
+const _Stream = function (value, values, observers) {
+    this.value = value
+    this.values = append(value, values || [])
+    this.observers = observers || []
 }
 
 const Stream = (initialvalue) => new _Stream(initialvalue)
 
 const isStream = (stream) => stream instanceof _Stream
 
-const subscribe = (observer, stream) => assoc('observers', append(observer, stream.observers))
+const subscribe = (observer, stream) => {
+
+    return Stream(stream.value, stream.values, append(observer, stream.observers))
+}
 
 const next = (value, stream) => {
     stream.value = value
@@ -33,10 +36,9 @@ const merge = (stream1, stream2) => {
 
 }*/
 
-export {
+module.exports = {
     Stream,
     isStream,
     subscribe,
-    next,
-    map
+    next
 }

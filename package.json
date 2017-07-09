@@ -1,0 +1,18 @@
+{
+  "name": "things",
+  "version": "0.0.1",
+  "description": "All sorts",
+  "homepage": "https://github.com/andyleggett/things",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/andyleggett/things.git"
+  },
+  "dependencies": {
+    "ramda": "^0.23.0"
+  },
+  "devDependencies": {
+
+  },
+  "author": "Andrew Leggett<me@andyleggett.co.uk>",
+  "license": "MIT"
+}
