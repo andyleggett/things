@@ -9,7 +9,7 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Program",
-            "program": "${workspaceRoot}/test/stream.js",
+            "program": "${workspaceRoot}/test/observable.js",
             "cwd": "${workspaceRoot}"
         }
     ]
