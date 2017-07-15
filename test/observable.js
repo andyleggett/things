@@ -1,20 +1,32 @@
-const {Observable, subscribe, map, filter} = require('../monads/observable.js')
+const {Observable, subscribe, map, filter, merge, chain} = require('../monads/observable.js')
 
-const {identity, compose} = require('ramda')
+const {identity, compose, curry} = require('ramda')
 
-let vals = Observable((observer) => {
+const counterObserver = observer => {
     let counter = 0
-    let interval = setInterval(() => {
+    const interval = setInterval(() => {
         observer.next(counter++)
     }, 1000)
 
     return () => clearInterval(interval)
+}
+
+const delayObserver = curry((value, delay) => observer => {
+    const timeout = setTimeout(() => {
+        observer.next(value)
+    }, delay)
+
+    return () => clearTimeout(timeout)
 })
 
-vals = compose(filter((val) => val % 2 === 0), map((val) => val * val))(vals)
+let vals1 = Observable(counterObserver)
+
+let vals2 = compose(map(val => 'Value after delay - ' + val), chain(val => Observable(delayObserver(val, 3000))), map(val => val * val))(Observable(counterObserver))
+
+let merged = merge([vals1, vals2])
 
 const unsubscribe = subscribe({
     next: console.log
-}, vals)
+}, vals2)
 
 setTimeout(() => unsubscribe(), 20000)
