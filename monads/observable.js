@@ -54,7 +54,6 @@ const merge = (observables) => {
 
 const chain = curry((f, observable) => {
     return Observable(observer => {
-
         let subscriptions = []
 
         const outerSubscription = subscribe({
@@ -81,6 +80,20 @@ const chain = curry((f, observable) => {
     })
 })
 
+const reduce = curry((f, seed, observable) => {
+    let acc = seed
+
+    return Observable(observer => {
+        const reduceObserver = {
+            next: (value) => observer.next(acc = f(acc, value)),
+            error: (err) => observer.error(err),
+            complete: () => observer.complete()
+        }
+
+        return subscribe(reduceObserver, observable)
+    })
+})
+
 module.exports = {
     Observable,
     isObservable,
@@ -88,5 +101,6 @@ module.exports = {
     map,
     filter,
     merge,
-    chain
+    chain,
+    reduce
 }

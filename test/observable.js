@@ -1,4 +1,4 @@
-const {Observable, subscribe, map, filter, merge, chain} = require('../monads/observable.js')
+const {Observable, subscribe, map, filter, merge, chain, reduce} = require('../monads/observable.js')
 
 const {identity, compose, curry} = require('ramda')
 
@@ -21,7 +21,7 @@ const delayObserver = curry((value, delay) => observer => {
 
 let vals1 = Observable(counterObserver)
 
-let vals2 = compose(map(val => 'Value after delay - ' + val), chain(val => Observable(delayObserver(val, 3000))), map(val => val * val))(Observable(counterObserver))
+let vals2 = compose(reduce((acc, val) => acc + ' ' + val, ''), map(val => 'Value after delay - ' + val), chain(val => Observable(delayObserver(val, 3000))), map(val => val * val))(Observable(counterObserver))
 
 let merged = merge([vals1, vals2])
 
