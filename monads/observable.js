@@ -40,13 +40,27 @@ const callAll = (fns) => () => forEach((fn) => fn())(fns)
 
 const merge = (observables) => {
     return Observable(observer => {
-        const mergeObserver = {
-            next: (value) => observer.next(value),
-            error: (err) => observer.error(err),
-            complete: () => observer.complete()
+        let subscriptions = []
+
+        const checkComplete = () => {
+            if (subscriptions.length === 0){
+                observer.complete()
+            }
         }
 
-        const innerSubscriptions = compose(callAll, mapList(subscribe(mergeObserver)))(observables)
+        const innerSubscriptions =  mapList(observable => {
+            const mergeObserver = {
+                next: (value) => observer.next(value),
+                error: (err) => observer.error(err),
+                complete: () => {
+                    subscriptions = reject(equals(innerSubscription))(subscriptions)
+                    checkComplete()
+                }
+            }
+
+            const innerSubscription = subscribe(mergeObserver, observable)
+            subscriptions = append(innerSubscription, subscriptions)
+        })(observables)
 
         return innerSubscriptions
     })
@@ -71,14 +85,12 @@ const chain = curry((f, observable) => {
                     next: (value) => observer.next(value),
                     error: (err) => observer.error(err),
                     complete: () => {
-                        //console.log('complete inner', subscriptions.length)
                         subscriptions = reject(equals(innerSubscription))(subscriptions)
                         checkComplete()
                     }
                 }, innerObservable)
 
                 subscriptions = append(innerSubscription, subscriptions)
-                //console.log('add inner', subscriptions.length)
             },
             error: (err) => observer.error(err),
             complete: () => {
@@ -95,8 +107,10 @@ const scan = curry((f, seed, observable) => {
     let acc = seed
 
     return Observable(observer => {
+        acc = f(acc, value)
+
         const scanObserver = {
-            next: (value) => observer.next(acc = f(acc, value)),
+            next: (value) => observer.next(acc),
             error: (err) => observer.error(err),
             complete: () => observer.complete()
         }
@@ -112,7 +126,6 @@ const reduce = curry((f, seed, observable) => {
         const reduceObserver = {
             next: (value) => {
                 acc = f(acc, value)
-                //console.log(acc)
             },
             error: (err) => observer.error(err),
             complete: () => {
