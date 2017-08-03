@@ -53,6 +53,31 @@ const cata = (pattern, task) => fold(pattern.rejected, pattern.resolved, task)
 
 const bimap = (f, g) => Task((reject, resolve) => fork(a => reject(f(a)), b => resolve(g(b))), task)
 
+const sequence = (tasks) => Task((reject, resolve) => {
+    let results = []
+    let count = 0
+    let done = false
+
+    addIndex(forEach)((task, index) => {
+        fork(
+            (err) => {
+                if (done === false){
+                    done = true
+                    reject(err)
+                }
+            },
+            (result) => {
+                results[index] = result
+                count += 1
+                if (count === tasks.length){
+                    resolve(results)
+                }
+            },
+            task
+        )
+    }, tasks)
+})
+
 const fork = (reject, resolve, task) => task.computation(reject, resolve)
 
 module.exports = {
@@ -63,6 +88,7 @@ module.exports = {
     chain,
     ap,
     concat,
+    sequence,
     empty,
     fold,
     cata,
