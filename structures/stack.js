@@ -40,7 +40,7 @@ const reverse = (stack) => {
     return reverseStack
 }
 
-module.exports = {
+export {
     push,
     pop,
     peek,

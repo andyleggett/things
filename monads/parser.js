@@ -1,4 +1,4 @@
-const {
+import {
     flip,
     reduce,
     flatten,
@@ -9,24 +9,21 @@ const {
     curry,
     compose,
     apply,
-    repeat,
-    map: listMap,
-    contains,
-    join
-} = require('ramda')
+    map as listMap,
+    contains
+} from 'ramda'
 
-const {
+import {
     Left,
     Right
-} = require('data.either')
+} from './either'
 
 //PARSER TYPE
-const _Parser = function (action, label) {
+const _Parser = function (action) {
     this.action = action
-    this.label = label
 }
 
-const Parser = (action, label) => new _Parser(action, label)
+const Parser = (action) => new _Parser(action)
 
 //RESULT TYPES
 const _Success = function (value, remaining) {
@@ -36,12 +33,11 @@ const _Success = function (value, remaining) {
 
 const Success = (value, remaining) => new _Success(value, remaining)
 
-const _Failure = function (message, label) {
+const _Failure = function (message) {
     this.message = message
-    this.label = label
 }
 
-const Failure = (message, label) => new _Failure(message, label)
+const Failure = (message) => new _Failure(message)
 
 //HELPERS
 const isParser = (parser) => parser instanceof _Parser
@@ -52,12 +48,12 @@ const isFailure = (result) => result instanceof _Failure
 
 const parse = curry((parser, input) => parser.action(input))
 
-const fold = (result) => (isSuccess(result) === true) ? (result.remaining === '' ? Right(result.value) : Left('Input remaining')) : Left(`${result.message}. Expected ${result.label}.` )
+const fold = (result) => (isSuccess(result) === true) ? (result.remaining === '' ? Right(result.value) : Left('Input remaining')) : Left(result.message)
 
 //COMBINATORS
 const of = (value) => Parser((input) => Success(value, input))
 
-const fail = (message, label) => Parser((input) => Failure(message, label))
+const fail = (message) => Parser(() => Failure(message))
 
 const orElse = curry((parser1, parser2) => Parser((input) => {
     const result = parser1.action(input)
@@ -67,7 +63,7 @@ const orElse = curry((parser1, parser2) => Parser((input) => {
     } else {
         return parser2.action(input)
     }
-}, `${getLabel(parser1)} orElse ${getLabel(parser2)}`))
+}))
 
 const andThen = curry((parser1, parser2) => Parser((input) => {
     const result1 = parser1.action(input)
@@ -82,7 +78,7 @@ const andThen = curry((parser1, parser2) => Parser((input) => {
     } else {
         return result1
     }
-}, `${getLabel(parser1)} andThen ${getLabel(parser2)}`))
+}))
 
 const choice = (parsers) => reduce(orElse, head(parsers))(tail(parsers))
 
@@ -135,7 +131,7 @@ const zeroOrMore = (parser, input) => {
     }
 }
 
-const many = (parser) => Parser((input) => zeroOrMore(parser, input), `many ${getLabel(parser)}`)
+const many = (parser) => Parser((input) => zeroOrMore(parser, input))
 
 const many1 = (parser) => Parser((input) => {
     const result = parser.action(input)
@@ -144,15 +140,15 @@ const many1 = (parser) => Parser((input) => {
     } else {
         return result
     }
-}, `many1 ${getLabel(parser)}`)
+})
 
-const skip = (parser1, parser2) => sequenceMap((x, y) => y, [parser1, parser2])
+const skip = (parser1, parser2) => sequenceMap((_, y) => y, [parser1, parser2])
 
-const skipRight = (parser1, parser2) => sequenceMap((x, y) => x, [parser1, parser2])
+const skipRight = (parser1, parser2) => sequenceMap((x, _) => x, [parser1, parser2])
 
 const skipMany = () => {}
 
-const between = (parser1, parser2, parser3) => sequenceMap((x, y, z) => y, [parser1, parser2, parser3])
+const between = (parser1, parser2, parser3) => sequenceMap((_, y, __) => y, [parser1, parser2, parser3])
 
 const sepBy1 = (match, sep) => map(flatten)(andThen(match, many(skip(sep, match))))
 
@@ -204,18 +200,6 @@ const lazy = (f) => {
     return parser
 }
 
-const getLabel = (parser) => parser.label
-
-const setLabel = curry((label, parser) => Parser((input) => {
-    const result = parser.action(input)
-
-    if (isSuccess(result) === true){
-        return result
-    } else {
-        return Failure(result.message, label)
-    }
-}, label))
-
 //PARSERS
 const str = (str) => Parser((input) => {
     const test = input.slice(0, str.length)
@@ -227,27 +211,27 @@ const str = (str) => Parser((input) => {
     }
 }, str)
 
-const regex = (regexp, label) => Parser((input) => {
+const regex = (regexp) => Parser((input) => {
     const match = input.match(regexp)
 
     if (match !== null && (match[0] === input.substr(0, match[0].length))) {
         return Success(match[0], input.substr(match[0].length))
     } else {
-        return Failure('Unexpected string from ' + regexp.source, label)
+        return Failure('Unexpected string from ' + regexp.source)
     }
-}, label)
+})
 
-const satisfy = (pred, label) => Parser((input) => {
+const satisfy = (pred) => Parser((input) => {
     const test = input.charAt(0)
 
     if (pred(test) === true) {
         return Success(test, input.substr(1))
     } else {
-        return Failure('Unexpected ' + test, label)
+        return Failure('Unexpected ' + test)
     }
 })
 
-const anyOf = (chars) => compose(choice, setLabel('any of'), listMap(str))(chars)
+const anyOf = (chars) => compose(choice, listMap(str))(chars)
 
 const noneOf = (chars) => Parser((input) => {
 
@@ -256,7 +240,7 @@ const noneOf = (chars) => Parser((input) => {
     if (!contains(test, chars)){
         return Success(test, input.substr(1))
     } else {
-        return Failure('Unexpected ' + test, `one of ${join(',', chars)}`)
+        return Failure('Unexpected ' + test)
     }
 })
 
@@ -266,37 +250,7 @@ const all = Parser((input) => Success(input, ''))
 
 const any = Parser((input) => Success(input.charAt(0), input.substr(1)))
 
-const lookAhead = (str) => Parser((input) => {
-    const test = input.slice(0, str.length)
-
-    if (test === str) {
-        return Success('', input)
-    } else {
-        return Failure('Unexpected ' + text, str)
-    }
-})
-
-const lookAheadP = (parser) => Parser((input) => {
-    const result = parser.action(input)
-
-    if (isSuccess(result) === true){
-        return Success('', input)
-    } else {
-        return Failure('Unexpected failure of lookahead', getLabel(parser))
-    }
-})
-
-const lookAheadRegEx = (regex, label) => {
- const match = input.match(regexp)
-
-    if (match !== null && (match[0] === input.substr(0, match[0].length))) {
-        return Success('', input)
-    } else {
-        return Failure('Unexpected string from ' + regex.toString(), label)
-    }
-}
-
-module.exports = {
+export {
     str,
     regex,
     satisfy,
@@ -326,16 +280,11 @@ module.exports = {
     skip,
     skipRight,
     skipMany,
-    lookAhead,
-    lookAheadP,
-    lookAheadRegEx,
     ap,
     lift2,
     chain,
     parse,
     fold,
-    getLabel,
-    setLabel,
     isParser,
     isSuccess,
     isFailure

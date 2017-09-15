@@ -80,7 +80,7 @@ const sequence = (tasks) => Task((reject, resolve) => {
 
 const fork = (reject, resolve, task) => task.computation(reject, resolve)
 
-module.exports = {
+export {
     Task,
     of,
     rejected,

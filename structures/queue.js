@@ -11,11 +11,11 @@ const _Empty = function () {}
 
 const Empty = new _Empty()
 
-const enqueue = function (value, queue) {
+const enqueue = (value, queue) => {
     return Queue(queue.front, Stack.push(value, queue.back))
 }
 
-const dequeue = function (queue) {
+const dequeue = (queue) => {
     queue = swapStacks(queue)
 
     queue.front = Stack.pop(queue.front)
@@ -23,17 +23,17 @@ const dequeue = function (queue) {
     return Queue(queue.front, queue.back)
 }
 
-const peek = function (queue) {
+const peek = (queue) => {
     queue = swapStacks(queue)
 
     return queue.front.head
 }
 
-const empty = function () {
+const empty = () => {
     return Queue(Stack.empty(), Stack.empty())
 }
 
-const isEmpty = function (queue) {
+const isEmpty = (queue) => {
     return Stack.isEmpty(queue.front) && Stack.isEmpty(queue.back)
 }
 
@@ -79,7 +79,7 @@ const map = (f, queue) => {
     return newQueue
 }
 
-module.exports = {
+export {
     enqueue,
     dequeue,
     peek,

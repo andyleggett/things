@@ -1,4 +1,9 @@
-const { append, forEach, reject, equals } = require('ramda')
+import {
+    append,
+    forEach,
+    reject,
+    equals
+} from 'ramda'
 
 const _Subject = function () {
     this.observers = []
@@ -28,7 +33,7 @@ const complete = (subject) => {
     forEach(observer => observer.complete())(subject.observers)
 }
 
-module.exports = {
+export {
     Subject,
     subscribe,
     next,
